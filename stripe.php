@@ -34,6 +34,32 @@ class Embee_Stripe {
 		add_action( 'admin_menu', array( $this, 'stripe_admin_menu' ) );
 		add_action( 'admin_post_save_stripe_settings', array( $this, 'save_stripe_settings' ) );
 
+		add_action( 'wp_enqueue_scripts', array( $this, 'load_includes' ) );
+
+	}
+
+	/**
+	 * Loads the publishable key by the stripe mode that's set
+	 */
+	public function load_includes() {
+
+		wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v2/' , array('jquery'), '2.0', true );
+
+		$stripe_settings = get_option( 'stripe_settings', false );
+
+		// Set the secret key based on processing mode
+		if ( isset( $stripe_settings['mode'] ) ) {
+			$publishable_key = $stripe_settings[ $stripe_settings['mode'] . '_publishable_key' ];
+		}
+
+		wp_localize_script( 'stripe-js', 'embee_stripe',
+            array( 
+            	'ajax_url' => admin_url( 'admin-ajax.php' ),
+            	'publishable_key' => $publishable_key
+            )
+        );
+
+
 	}
 
 	public function stripe_admin_menu() {

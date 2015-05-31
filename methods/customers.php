@@ -25,9 +25,7 @@ class Stripe_API_Customers extends Stripe_API {
 		
 		$stripe_customer_ID = parent::create( $create_args );
 		
-		if ( $stripe_customer_ID && $user_id ) {
-
-			update_user_meta( $user_id, 'stripe_customer_id', $stripe_customer_ID );
+		if ( $stripe_customer_ID ) {
 
 			return $stripe_customer_ID;
 
@@ -46,49 +44,36 @@ class Stripe_API_Customers extends Stripe_API {
 	 * @return string $stripe_customer_ID
 	 */
 	public function get_ID_by_email( $user_email = '' ) {
-
+		
 		if ( empty( $user_email ) ) {
 			return '';
 		}
-
-		if ( ! $user = get_user_by( 'email', $user_email ) ) {
-			return '';
-		}
-
-		// Look in WP first to get the customer ID
-		$stripe_customer_ID = get_user_meta( $user_id, 'stripe_customer_id', true );
 		
-		// If not stored locally, query Stripe to see if a email can be located
-		if ( ! $stripe_customer_ID ) {
+		$stripe_customer_ID = '';
 
-			$search_args = array(
-				'query' => $user_email,
-				'count' => 10,
-			);
+		$search_args = array(
+			'query' => $user_email,
+			'count' => 10,
+		);
 
-			$stripe_response = $this->request( 'get', 'https://dashboard.stripe.com/v1/search', $search_args );
+		$stripe_response = $this->request( 'get', 'https://dashboard.stripe.com/v1/search', $search_args );
 
-			if ( isset( $stripe_response->data ) ) {
+		if ( isset( $stripe_response->data ) ) {
 
-				// Loop through all returned objects and find the match
-				foreach ( $stripe_response->data as $stripe_object ) {
+			// Loop through all returned objects and find the match
+			foreach ( $stripe_response->data as $stripe_object ) {
 
-					if ( $stripe_object->object == 'customer' ) {
+				if ( $stripe_object->object == 'customer' ) {
 
-						$stripe_customer_ID = $stripe_object->id;
-						
-						update_user_meta( $user->ID, 'stripe_customer_id', $stripe_customer_ID );
+					$stripe_customer_ID = $stripe_object->id;
+					continue;
 
-						continue;
-
-					} 
-
-				}
+				} 
 
 			}
 
 		}
-		
+
 		return $stripe_customer_ID;
 
 	}
